@@ -6,11 +6,29 @@ import (
 	"log"
 	"time"
 
+	"maicai.ddxq.com/etcdv3"
+
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes"
 )
 
+//https://godoc.org/github.com/coreos/etcd/clientv3#example-KV--Put
+
 func main() {
+	endpoints := []string{"localhost:2379"}
+	etcdv3.InitConfig(endpoints, "1")
+	key := "key2"
+	val, err := etcdv3.GetKey(key)
+	if err == nil {
+		fmt.Printf("%s =>%s", key, val)
+		fmt.Println()
+	} else {
+		fmt.Errorf("get %s found error:%s", key, err.Error())
+	}
+
+}
+
+func main1() {
 
 	cli, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{"localhost:2379", "localhost:22379", "localhost:32379"},
