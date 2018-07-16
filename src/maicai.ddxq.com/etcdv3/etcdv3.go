@@ -13,25 +13,32 @@ var globalEndpoints []string
 var globalTimeout string
 
 var globalKVC clientv3.KV
+var globalCli *clientv3.Client
 
 func InitConfig(endpoints []string, timeout string) {
 	globalEndpoints = endpoints
 	globalTimeout = timeout
 }
 
-func getKVC() clientv3.KV {
-	if globalKVC == nil {
+func getCli() (*clientv3.Client) {
+	if globalCli == nil {
 		cfg := clientv3.Config{
 			Endpoints: globalEndpoints,
-			// set timeout per request to fail fast when the target endpoint is unavailable
 			DialTimeout: time.Second,
 		}
-		c, err := clientv3.New(cfg)
-		//client.EnablecURLDebug()
+		cli, err := clientv3.New(cfg)
 		if err != nil {
 			log.Fatal(err)
 		}
-		globalKVC = clientv3.NewKV(c)
+		globalCli = cli
+	}
+	return globalCli
+}
+
+func getKVC() clientv3.KV {
+	if globalKVC == nil {
+		globalCli = getCli()
+		globalKVC = clientv3.NewKV(globalCli)
 	}
 	return globalKVC
 }
@@ -74,8 +81,8 @@ func GetKeyRev(key string, rev int64) (string, error) {
 func GetKeyList(key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
 	kvc := getKVC()
 
-	ctx, canel := getCtx(globalTimeout)
-	defer canel()
+	ctx, cancel := getCtx(globalTimeout)
+	defer cancel()
 	if len(opts) > 0 {
 		return kvc.Get(ctx, key, opts...)
 	}
@@ -96,8 +103,8 @@ func GetKeyListWithPrefix(key string) (map[string]string, error) {
 
 func PutKey(key, value string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
 	kvc := getKVC()
-	ctx, canel := getCtx(globalTimeout)
-	defer canel()
+	ctx, cancel := getCtx(globalTimeout)
+	defer cancel()
 	if len(opts) > 0 {
 		return kvc.Put(ctx, key, value, opts...)
 	}
@@ -106,8 +113,8 @@ func PutKey(key, value string, opts ...clientv3.OpOption) (*clientv3.PutResponse
 
 func DeleteKey(key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
 	kvc := getKVC()
-	ctx, canel := getCtx(globalTimeout)
-	defer canel()
+	ctx, cancel := getCtx(globalTimeout)
+	defer cancel()
 	if len(opts) > 0 {
 		return kvc.Delete(ctx, key, opts...)
 	}
