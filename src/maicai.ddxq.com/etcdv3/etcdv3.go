@@ -3,9 +3,7 @@ package etcdv3
 import (
 	"log"
 	"time"
-
 	"golang.org/x/net/context"
-
 	"github.com/coreos/etcd/clientv3"
 )
 

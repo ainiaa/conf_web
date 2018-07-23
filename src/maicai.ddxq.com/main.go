@@ -17,6 +17,7 @@ import (
 func main() {
 	endpoints := []string{"localhost:2379"}
 	etcdv3.InitConfig(endpoints, "1")
+	/*
 	key := "key2"
 	val, err := etcdv3.GetKey(key)
 	if err == nil {
@@ -24,6 +25,26 @@ func main() {
 		fmt.Println()
 	} else {
 		fmt.Errorf("get %s found error:%s", key, err.Error())
+	}*/
+	/*for i:=0; i< 5;i++ {
+		key := "batch_key:" + strconv.Itoa(i)
+		val := key + ":value"
+		etcdv3.PutKey(key,val)
+	}*/
+	keys,err := etcdv3.GetKeyList("batch_key", clientv3.WithPrefix())
+	if err != nil {
+		fmt.Errorf("getKeyList error:%s", err.Error())
+	}
+	for _,kv := range keys.Kvs {
+		fmt.Printf("%s => %s", kv.Key, kv.Value)
+		fmt.Println()
+	}
+
+	fmt.Println("GetKeyListWithPrefix")
+	keys2,err := etcdv3.GetKeyListWithPrefix("batch")
+	for k,v :=range keys2 {
+		fmt.Printf("%s => %s", k, v)
+		fmt.Println()
 	}
 
 }
