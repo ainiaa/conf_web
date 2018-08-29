@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"maicai.ddxq.com/etcdv3"
 
 	"github.com/coreos/etcd/clientv3"
@@ -14,39 +15,98 @@ import (
 
 //https://godoc.org/github.com/coreos/etcd/clientv3#example-KV--Put
 
-func main() {
+func setupRouter() *gin.Engine {
+	router := gin.Default()
+	router.GET("/ping", ping)
+	router.GET("/getKeyList", getKeyList)
+	router.GET("/getKeyList2", getKeyList2)
+	router.GET("/getKey", getKey)
+	router.GET("/setKey", setKey)
+
+}
+
+func ping(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "pong",
+	})
+}
+
+func setKey(c *gin.Context) {
 	endpoints := []string{"localhost:2379"}
 	etcdv3.InitConfig(endpoints, "1")
-	/*
-	key := "key2"
+
+	key := c.DefaultQuery("key", "key2")
+	value := c.DefaultQuery("value", "value_set_key")
+	val, err := etcdv3.PutKey(key, value)
+	if err == nil {
+		fmt.Printf("%s =>%s set success", key, val)
+		fmt.Println()
+	} else {
+		fmt.Errorf("get %s found error:%s", key, err.Error())
+		fmt.Println()
+	}
+
+}
+
+func getKey(c *gin.Context) {
+	endpoints := []string{"localhost:2379"}
+	etcdv3.InitConfig(endpoints, "1")
+
+	key := c.DefaultQuery("key", "key2")
 	val, err := etcdv3.GetKey(key)
 	if err == nil {
 		fmt.Printf("%s =>%s", key, val)
 		fmt.Println()
 	} else {
 		fmt.Errorf("get %s found error:%s", key, err.Error())
-	}*/
-	/*for i:=0; i< 5;i++ {
-		key := "batch_key:" + strconv.Itoa(i)
-		val := key + ":value"
-		etcdv3.PutKey(key,val)
-	}*/
-	keys,err := etcdv3.GetKeyList("batch_key", clientv3.WithPrefix())
+		fmt.Println()
+	}
+
+}
+
+func getKeyList(c *gin.Context) {
+	endpoints := []string{"localhost:2379"}
+	etcdv3.InitConfig(endpoints, "1")
+
+	key := c.DefaultQuery("key", "batch_key")
+
+	keys, err := etcdv3.GetKeyList(key, clientv3.WithPrefix())
 	if err != nil {
 		fmt.Errorf("getKeyList error:%s", err.Error())
 	}
-	for _,kv := range keys.Kvs {
+	for _, kv := range keys.Kvs {
 		fmt.Printf("%s => %s", kv.Key, kv.Value)
 		fmt.Println()
 	}
+}
 
+func getKeyList2(c *gin.Context) {
+	endpoints := []string{"localhost:2379"}
+	etcdv3.InitConfig(endpoints, "1")
+	key := c.DefaultQuery("key", "batch")
 	fmt.Println("GetKeyListWithPrefix")
-	keys2,err := etcdv3.GetKeyListWithPrefix("batch")
-	for k,v :=range keys2 {
+	keys, err := etcdv3.GetKeyListWithPrefix(key)
+	for k, v := range keys {
 		fmt.Printf("%s => %s", k, v)
 		fmt.Println()
 	}
+}
 
+func main() {
+	r := gin.Default()
+
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
+	r.GET("/keys", func(c *gin.Context) {
+
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
+	r.Run()
 }
 
 func main1() {
