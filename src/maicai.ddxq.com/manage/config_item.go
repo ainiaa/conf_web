@@ -1,19 +1,10 @@
-package config_manage
+package manage
 
 import (
-	"context"
 	"fmt"
-	"log"
-	"net/http"
-	"time"
 
-	"github.com/gin-gonic/gin"
-	"maicai.ddxq.com/config"
 	"maicai.ddxq.com/etcdv3"
 	"maicai.ddxq.com/util"
-
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes"
 )
 
 //https://godoc.org/github.com/coreos/etcd/clientv3#example-KV--Put
@@ -23,13 +14,9 @@ type KeyInfo struct {
 	Value string `json:"value" form:"value"`
 }
 
-func setKey(key string, value string) error {
+func SetKey(key string, value string) error {
 
-	//endpoints := []string{"localhost:2379"}
-	//etcdv3.InitConfig(endpoints, "1")
-	etcdconfig := config.GetEtcdConfig()
-	etcdv3.InitConfig(etcdconfig.Endpoints, etcdconfig.Timeout)
-
+	etcdv3.InitGlobalConfig()
 	val, err := etcdv3.PutKey(key, value)
 	if err == nil {
 		fmt.Printf("%s =>%s set success", key, val)
@@ -42,10 +29,8 @@ func setKey(key string, value string) error {
 
 }
 
-func getKey(key string) KeyInfo {
-	endpoints := []string{"localhost:2379"}
-	etcdv3.InitConfig(endpoints, "1")
-
+func GetKey(key string) KeyInfo {
+	etcdv3.InitGlobalConfig()
 	val, err := etcdv3.GetKey(key)
 	if err == nil {
 		fmt.Printf("%s =>%s", key, val)
@@ -57,10 +42,8 @@ func getKey(key string) KeyInfo {
 	return KeyInfo{key, val}
 }
 
-func getKeyList(key string) []KeyInfo {
-	endpoints := []string{"localhost:2379"}
-	etcdv3.InitConfig(endpoints, "1")
-
+func GetKeyList(key string) []KeyInfo {
+	etcdv3.InitGlobalConfig()
 	//keys, err := etcdv3.GetKeyList(key, clientv3.WithPrefix())
 	keys, err := etcdv3.GetKeyList(key)
 	if err != nil {
@@ -77,9 +60,8 @@ func getKeyList(key string) []KeyInfo {
 	return keyInfos
 }
 
-func getKeyList2(key string) []KeyInfo {
-	endpoints := []string{"localhost:2379"}
-	etcdv3.InitConfig(endpoints, "1")
+func GetKeyList2(key string) []KeyInfo {
+	etcdv3.InitGlobalConfig()
 	fmt.Println("GetKeyListWithPrefix")
 	keys, err := etcdv3.GetKeyListWithPrefix(key)
 	if err != nil {

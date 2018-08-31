@@ -9,7 +9,7 @@ import (
 
 type Etcdconfig struct {
 	Endpoints []string `yaml:"endpoints,flow"`
-	Timeout   int      `yaml:"timeout"`
+	Timeout   string   `yaml:"timeout"`
 }
 type MyConf struct {
 	Etcdconfig      Etcdconfig `yaml:"etcdconfig"`

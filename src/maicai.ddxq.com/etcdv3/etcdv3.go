@@ -3,25 +3,37 @@ package etcdv3
 import (
 	"log"
 	"time"
-	"golang.org/x/net/context"
+
 	"github.com/coreos/etcd/clientv3"
+	"golang.org/x/net/context"
+	"maicai.ddxq.com/config"
 )
 
-var globalEndpoints []string
-var globalTimeout string
+var globalEndpoints = []string{"localhost:2379"}
+var globalTimeout = "2"
 
 var globalKVC clientv3.KV
 var globalCli *clientv3.Client
+var initedConfig = false
+
+func InitGlobalConfig() {
+	if initedConfig == false {
+		c := config.GetEtcdConfig()
+		globalEndpoints = c.Endpoints
+		globalTimeout = c.Timeout
+		initedConfig = true
+	}
+}
 
 func InitConfig(endpoints []string, timeout string) {
 	globalEndpoints = endpoints
 	globalTimeout = timeout
 }
 
-func getCli() (*clientv3.Client) {
+func getCli() *clientv3.Client {
 	if globalCli == nil {
 		cfg := clientv3.Config{
-			Endpoints: globalEndpoints,
+			Endpoints:   globalEndpoints,
 			DialTimeout: time.Second,
 		}
 		cli, err := clientv3.New(cfg)
