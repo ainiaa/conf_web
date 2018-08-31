@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,14 +16,23 @@ import (
 
 //https://godoc.org/github.com/coreos/etcd/clientv3#example-KV--Put
 
+type KeyInfo struct {
+	Key   string `json:"key" form:"key"`
+	Value string `json:"value" form:"value"`
+}
+
+func toString(content []byte) string {
+	return string(content[:])
+}
+
 func setupRouter() *gin.Engine {
 	router := gin.Default()
 	router.GET("/ping", ping)
-	router.GET("/getKeyList", getKeyList)
-	router.GET("/getKeyList2", getKeyList2)
-	router.GET("/getKey", getKey)
+	router.GET("/getKeyList", getKeyListHandler)
+	router.GET("/getKeyList2", getKeyList2Handler)
+	router.GET("/getKey", getKeyHandler)
 	router.GET("/setKey", setKey)
-
+	return router
 }
 
 func ping(c *gin.Context) {
@@ -47,12 +57,18 @@ func setKey(c *gin.Context) {
 	}
 
 }
-
-func getKey(c *gin.Context) {
+func getKeyHandler(c *gin.Context) {
+	key := c.DefaultQuery("key", "key2")
+	keyInfo := getKey(key)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "getKeyHandler",
+		"data":    keyInfo,
+	})
+}
+func getKey(key string) KeyInfo {
 	endpoints := []string{"localhost:2379"}
 	etcdv3.InitConfig(endpoints, "1")
 
-	key := c.DefaultQuery("key", "key2")
 	val, err := etcdv3.GetKey(key)
 	if err == nil {
 		fmt.Printf("%s =>%s", key, val)
@@ -61,52 +77,67 @@ func getKey(c *gin.Context) {
 		fmt.Errorf("get %s found error:%s", key, err.Error())
 		fmt.Println()
 	}
-
+	return KeyInfo{key, val}
 }
 
-func getKeyList(c *gin.Context) {
+func getKeyListHandler(c *gin.Context) {
+	key := c.DefaultQuery("key", "batch_key")
+	keyInfos := getKeyList(key)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "getKeyListHandler",
+		"data":    keyInfos,
+	})
+}
+
+func getKeyList(key string) []KeyInfo {
 	endpoints := []string{"localhost:2379"}
 	etcdv3.InitConfig(endpoints, "1")
 
-	key := c.DefaultQuery("key", "batch_key")
-
-	keys, err := etcdv3.GetKeyList(key, clientv3.WithPrefix())
+	//keys, err := etcdv3.GetKeyList(key, clientv3.WithPrefix())
+	keys, err := etcdv3.GetKeyList(key)
 	if err != nil {
 		fmt.Errorf("getKeyList error:%s", err.Error())
 	}
+	keyInfos := make([]KeyInfo, 0)
 	for _, kv := range keys.Kvs {
 		fmt.Printf("%s => %s", kv.Key, kv.Value)
 		fmt.Println()
+		keyInfo := KeyInfo{Key: toString(kv.Key), Value: toString(kv.Value)}
+		keyInfos = append(keyInfos, keyInfo)
 	}
-}
 
-func getKeyList2(c *gin.Context) {
+	return keyInfos
+}
+func getKeyList2Handler(c *gin.Context) {
+	key := c.DefaultQuery("key", "batch")
+	keyInfos := getKeyList2(key)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "getKeyListHandler",
+		"data":    keyInfos,
+	})
+}
+func getKeyList2(key string) []KeyInfo {
 	endpoints := []string{"localhost:2379"}
 	etcdv3.InitConfig(endpoints, "1")
-	key := c.DefaultQuery("key", "batch")
 	fmt.Println("GetKeyListWithPrefix")
 	keys, err := etcdv3.GetKeyListWithPrefix(key)
+	if err != nil {
+		fmt.Printf("etcdv3.GetKeyListWithPrefix found error, key:%s, error:%s", key, err.Error())
+		fmt.Println()
+	}
+	keyInfos := make([]KeyInfo, 0)
 	for k, v := range keys {
 		fmt.Printf("%s => %s", k, v)
 		fmt.Println()
+		keyInfos = append(keyInfos, KeyInfo{k, v})
 	}
+
+	return keyInfos
 }
 
 func main() {
-	r := gin.Default()
-
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-	r.GET("/keys", func(c *gin.Context) {
-
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-	r.Run()
+	router := setupRouter()
+	router.Run()
 }
 
 func main1() {
