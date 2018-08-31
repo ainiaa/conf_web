@@ -1,3 +1,4 @@
-pkg/
+pkg/windows_amd64
+pkg/dep
 *.exe
 src/.idea/workspace.xml

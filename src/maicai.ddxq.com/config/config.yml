@@ -1,0 +1,5 @@
+etcdconfig: 
+    endpoints: 
+        - localhost:2379
+    timeout: 2
+project_store_key: project
