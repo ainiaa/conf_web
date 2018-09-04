@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -17,18 +19,97 @@ import (
 //https://godoc.org/github.com/coreos/etcd/clientv3#example-KV--Put
 
 type KeyInfo struct {
-	Key   string `json:"key" form:"key"`
-	Value string `json:"value" form:"value"`
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type MenuNodeAttributes struct {
+	Url  string `json:"url"`
+	Icon string `json:"icon"`
+}
+
+type MenuNode struct {
+	Id         int                `json:"id"`
+	Text       string             `json:"text"`
+	State      string             `json:"state"`
+	Attributes MenuNodeAttributes `json:"attributes"`
+	MenuNodes  []*MenuNode        `json:"children,omitempty"`
+}
+
+type DataGrid struct {
+	Total            int            `json:"total"`
+	DataGridNodeList []DataGridNode `json:"rows"`
+}
+type DataGridNode struct {
+	ProductId   string  `json:"productid,omitempty"`
+	ProductName string  `json:"productname,omitempty"`
+	UnitCost    float32 `json:"unitcost,omitempty"`
+	Status      string  `json:"status,omitempty"`
+	ListPrice   float32 `json:"listprice,omitempty"`
+	Attr1       string  `json:"attr1,omitempty"`
+	Itemid      string  `json:"itemid,omitempty"`
 }
 
 func setupRouter() *gin.Engine {
 	router := gin.Default()
+
+	router.LoadHTMLGlob("templates/*.html")
+	router.Static("/css", "templates/css")
+	router.Static("/easyui", "templates/easyui")
+	router.Static("/js", "templates/js")
+	router.Static("/images", "templates/images")
+	router.Static("/temp", "templates/temp")
+
 	router.GET("/ping", ping)
 	router.GET("/getKeyList", getKeyListHandler)
 	router.GET("/getKeyList2", getKeyList2Handler)
 	router.GET("/getKey", getKeyHandler)
 	router.GET("/setKey", setKeyHandler)
+
+	router.GET("/index", indexHandler)
+	router.POST("/getMenu", getMenuHandler)
+	router.GET("/getMenu", getMenuHandler)
+	router.POST("/getDataGrid", getDataGridHandler)
+	router.GET("/getDataGrid", getDataGridHandler)
 	return router
+}
+
+func indexHandler(c *gin.Context) {
+	c.HTML(http.StatusOK, "index.html", gin.H{
+		"title": "Users",
+	})
+}
+
+func getMenuHandler(c *gin.Context) {
+	data, err := ioutil.ReadFile("./templates/temp/menu.json")
+	//fmt.Printf("json:%s", data)
+	if err != nil {
+		fmt.Errorf("read error:%s", err.Error())
+	}
+
+	var menuList []MenuNode
+	err = json.Unmarshal([]byte(data), &menuList)
+	if err != nil {
+		fmt.Errorf("json.Unmarshal error:%s", err.Error())
+	}
+	//fmt.Printf("menuList:%+v\n", menuList)
+	c.JSON(http.StatusOK, menuList)
+}
+
+func getDataGridHandler(c *gin.Context) {
+	data, err := ioutil.ReadFile("./templates/temp/datagrid.json")
+	fmt.Printf("json:%s", data)
+	if err != nil {
+		fmt.Errorf("read error:%s", err.Error())
+	}
+
+	dataGrid := DataGrid{}
+	err = json.Unmarshal([]byte(data), &dataGrid)
+	if err != nil {
+		fmt.Errorf("json.Unmarshal error:%s", err.Error())
+	}
+	//fmt.Printf("dataGrid:%+v\n", dataGrid)
+	c.JSON(http.StatusOK, dataGrid)
 }
 
 func ping(c *gin.Context) {
