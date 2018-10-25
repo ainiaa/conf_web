@@ -29,6 +29,31 @@ func SetKey(key string, value string) error {
 
 }
 
+func SetKeyWithLease(key, value string, ttl int64) (*clientv3.LeaseGrantResponse, error) {
+	etcdv3.InitGlobalConfig()
+	lresp, presp, err := etcdv3.PutKeyWithLease(key, value, ttl)
+	if err == nil {
+		fmt.Printf("%s =>%s set success", key, value)
+		fmt.Println()
+	} else {
+		fmt.Errorf("get %s found error:%s", key, err.Error())
+		fmt.Println()
+	}
+	return lresp, err
+}
+
+func LeaseRevoke(respID etcdv3.RespID) error {
+	return etcdv3.LeaseRevoke(respID)
+}
+
+func LeaseKeepAlive(respID etcdv3.RespID) error {
+	return etcdv3.LeaseKeepAlive(respID)
+}
+
+func LeaseKeepAliveOnce(respID etcdv3.RespID) error {
+	return etcdv3.LeaseKeepAliveOnce(respID)
+}
+
 func GetKey(key string) KeyInfo {
 	etcdv3.InitGlobalConfig()
 	val, err := etcdv3.GetKey(key)

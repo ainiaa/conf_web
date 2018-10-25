@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	//"github.com/casbin/casbin"
@@ -70,6 +71,10 @@ func setupRouter() *gin.Engine {
 	router.GET("/getKeyList2", getKeyList2Handler)
 	router.GET("/getKey", getKeyHandler)
 	router.GET("/setKey", setKeyHandler)
+	router.GET("/setKeyWithTtl", setKeyWithTtlHandler)
+	router.GET("/leaseRevoke", leaseRevokeHandler)
+	router.GET("/leaseKeepAlive", leaseKeepAliveHandler)
+	router.GET("/leaseKeepAliveOnce", leaseKeepAliveOnceHandler)
 
 	router.GET("/index", indexHandler)
 	router.POST("/getMenu", getMenuHandler)
@@ -127,6 +132,90 @@ func setKeyHandler(c *gin.Context) {
 	key := c.DefaultQuery("key", "key2")
 	value := c.DefaultQuery("value", "value_set_key")
 	err := cm.SetKey(key, value)
+	if err == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "set success",
+		})
+	} else {
+
+		c.JSON(http.StatusOK, gin.H{
+			"message": fmt.Errorf("set failure, error:%s", err.Error()),
+		})
+	}
+}
+
+func leaseRevokeHandler(c *gin.Context) {
+	if globalResp != nil {
+		err := cm.LeaseRevoke(globalResp.ID)
+		if err == nil {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "LeaseRevoke operate success",
+			})
+		} else {
+
+			c.JSON(http.StatusOK, gin.H{
+				"message": fmt.Errorf("LeaseRevoke operate failure, error:%s", err.Error()),
+			})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "nothing to be operated",
+		})
+	}
+}
+
+func leaseKeepAliveHandler(c *gin.Context) {
+	if globalResp != nil {
+		err := cm.LeaseKeepAlive(globalResp.ID)
+		if err == nil {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "LeaseKeepAlive operate success",
+			})
+		} else {
+
+			c.JSON(http.StatusOK, gin.H{
+				"message": fmt.Errorf("LeaseKeepAlive operate failure, error:%s", err.Error()),
+			})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "nothing to be operated",
+		})
+	}
+}
+
+func leaseKeepAliveOnceHandler(c *gin.Context) {
+	if globalResp != nil {
+		err := cm.LeaseKeepAliveOnce(globalResp.ID)
+		if err == nil {
+			c.JSON(http.StatusOK, gin.H{
+				"message": "LeaseKeepAliveOnce operate success",
+			})
+		} else {
+
+			c.JSON(http.StatusOK, gin.H{
+				"message": fmt.Errorf("LeaseKeepAliveOnce operate failure, error:%s", err.Error()),
+			})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "nothing to be operated",
+		})
+	}
+}
+
+var globalResp *clientv3.LeaseGrantResponse
+
+func setKeyWithTtlHandler(c *gin.Context) {
+	key := c.DefaultQuery("key", "key2")
+	value := c.DefaultQuery("value", "value_set_key")
+	ttlstr := c.DefaultQuery("ttl", "5")
+	ttl, err := strconv.ParseInt(ttlstr, 10, 64)
+	if err != nil {
+		ttl = 5
+	}
+	var resp *clientv3.LeaseGrantResponse
+	globalResp, err = cm.SetKeyWithLease(key, value, ttl)
 	if err == nil {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "set success",

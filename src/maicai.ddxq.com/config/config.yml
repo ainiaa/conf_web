@@ -1,5 +1,6 @@
 etcdconfig: 
     endpoints: 
         - localhost:2379
-    timeout: 2
+    timeout: 10s  
+    lease: 5  
 project_store_key: project
