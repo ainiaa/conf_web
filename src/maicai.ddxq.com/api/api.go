@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"time"
 
+	//"github.com/casbin/casbin"
+	//"github.com/gin-contrib/authz"
+
 	"github.com/gin-gonic/gin"
 	cm "maicai.ddxq.com/manage"
 
@@ -51,8 +54,10 @@ type DataGridNode struct {
 }
 
 func setupRouter() *gin.Engine {
+	//e := casbin.NewEnforcer("config/authz_model.conf", "config/authz_policy.csv")
+	//router := gin.New()
+	//router.Use(authz.NewAuthorizer(e))
 	router := gin.Default()
-
 	router.LoadHTMLGlob("templates/*.html")
 	router.Static("/css", "templates/css")
 	router.Static("/easyui", "templates/easyui")
