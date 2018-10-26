@@ -13,53 +13,21 @@ import (
 	//"github.com/casbin/casbin"
 	//"github.com/gin-contrib/authz"
 
-	"github.com/gin-gonic/gin"
-	cm "maicai.ddxq.com/manage"
-
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes"
+	"github.com/gin-gonic/gin"
+	"maicai.ddxq.com/common"
+	cm "maicai.ddxq.com/manage"
 )
 
 //https://godoc.org/github.com/coreos/etcd/clientv3#example-KV--Put
-
-type KeyInfo struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-type MenuNodeAttributes struct {
-	Url  string `json:"url"`
-	Icon string `json:"icon"`
-}
-
-type MenuNode struct {
-	Id         int                `json:"id"`
-	Text       string             `json:"text"`
-	State      string             `json:"state"`
-	Attributes MenuNodeAttributes `json:"attributes"`
-	MenuNodes  []*MenuNode        `json:"children,omitempty"`
-}
-
-type DataGrid struct {
-	Total            int            `json:"total"`
-	DataGridNodeList []DataGridNode `json:"rows"`
-}
-type DataGridNode struct {
-	ProductId   string  `json:"productid,omitempty"`
-	ProductName string  `json:"productname,omitempty"`
-	UnitCost    float32 `json:"unitcost,omitempty"`
-	Status      string  `json:"status,omitempty"`
-	ListPrice   float32 `json:"listprice,omitempty"`
-	Attr1       string  `json:"attr1,omitempty"`
-	Itemid      string  `json:"itemid,omitempty"`
-}
 
 func setupRouter() *gin.Engine {
 	//e := casbin.NewEnforcer("config/authz_model.conf", "config/authz_policy.csv")
 	//router := gin.New()
 	//router.Use(authz.NewAuthorizer(e))
 	router := gin.Default()
-	router.LoadHTMLGlob("templates/*.html")
+	//router.LoadHTMLGlob("templates/*.html")
 	router.Static("/css", "templates/css")
 	router.Static("/easyui", "templates/easyui")
 	router.Static("/js", "templates/js")
@@ -71,7 +39,7 @@ func setupRouter() *gin.Engine {
 	router.GET("/getKeyList2", getKeyList2Handler)
 	router.GET("/getKey", getKeyHandler)
 	router.GET("/setKey", setKeyHandler)
-	router.GET("/setKeyWithTtl", setKeyWithTtlHandler)
+	router.GET("/setKeyWithTtl", setKeyWithTTLHandler)
 	router.GET("/leaseRevoke", leaseRevokeHandler)
 	router.GET("/leaseKeepAlive", leaseKeepAliveHandler)
 	router.GET("/leaseKeepAliveOnce", leaseKeepAliveOnceHandler)
@@ -95,13 +63,13 @@ func getMenuHandler(c *gin.Context) {
 	data, err := ioutil.ReadFile("./templates/temp/menu.json")
 	//fmt.Printf("json:%s", data)
 	if err != nil {
-		fmt.Errorf("read error:%s", err.Error())
+		fmt.Printf("read error:%s \r\n", err.Error())
 	}
 
-	var menuList []MenuNode
+	var menuList []common.MenuNode
 	err = json.Unmarshal([]byte(data), &menuList)
 	if err != nil {
-		fmt.Errorf("json.Unmarshal error:%s", err.Error())
+		fmt.Printf("json.Unmarshal error:%s", err.Error())
 	}
 	//fmt.Printf("menuList:%+v\n", menuList)
 	c.JSON(http.StatusOK, menuList)
@@ -111,13 +79,13 @@ func getDataGridHandler(c *gin.Context) {
 	data, err := ioutil.ReadFile("./templates/temp/datagrid.json")
 	fmt.Printf("json:%s", data)
 	if err != nil {
-		fmt.Errorf("read error:%s", err.Error())
+		fmt.Printf("read error:%s", err.Error())
 	}
 
-	dataGrid := DataGrid{}
+	dataGrid := common.DataGrid{}
 	err = json.Unmarshal([]byte(data), &dataGrid)
 	if err != nil {
-		fmt.Errorf("json.Unmarshal error:%s", err.Error())
+		fmt.Printf("json.Unmarshal error:%s", err.Error())
 	}
 	//fmt.Printf("dataGrid:%+v\n", dataGrid)
 	c.JSON(http.StatusOK, dataGrid)
@@ -232,7 +200,7 @@ func timetoLiveHandler(c *gin.Context) {
 
 var globalResp *clientv3.LeaseGrantResponse
 
-func setKeyWithTtlHandler(c *gin.Context) {
+func setKeyWithTTLHandler(c *gin.Context) {
 	key := c.DefaultQuery("key", "key2")
 	value := c.DefaultQuery("value", "value_set_key")
 	ttlstr := c.DefaultQuery("ttl", "5")
@@ -241,7 +209,7 @@ func setKeyWithTtlHandler(c *gin.Context) {
 		ttl = 5
 	}
 	globalResp, err = cm.SetKeyWithLease(key, value, ttl)
-	fmt.Printf("globalResp.ID %s \r\n", globalResp.ID)
+	fmt.Printf("globalResp.ID %d \r\n", globalResp.ID)
 	fmt.Printf("globalResp %+v \r\n", globalResp)
 	fmt.Println()
 	if err == nil {
@@ -283,6 +251,7 @@ func getKeyList2Handler(c *gin.Context) {
 	})
 }
 
+//Setup 入口
 func Setup() {
 	router := setupRouter()
 	router.Run()
@@ -295,7 +264,7 @@ func main1() {
 		DialTimeout: 5 * time.Second,
 	})
 	if err != nil {
-		fmt.Errorf("error:%s", err.Error())
+		fmt.Printf("error:%s", err.Error())
 	}
 	defer cli.Close()
 

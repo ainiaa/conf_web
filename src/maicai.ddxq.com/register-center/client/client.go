@@ -1,15 +1,8 @@
 package register
 
-import (
-	"fmt"
-
-	etcd "maicai.ddxq.com/etcdv3"
-)
-
-func register() error {
-	etcd.PutKey()
+func register() {
 }
 
-func keepAlive() error {
+func keepAlive() {
 
 }

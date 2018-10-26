@@ -4,17 +4,16 @@ import (
 	"fmt"
 
 	"github.com/coreos/etcd/clientv3"
+	"maicai.ddxq.com/common"
 	"maicai.ddxq.com/etcdv3"
 	"maicai.ddxq.com/util"
 )
 
 //https://godoc.org/github.com/coreos/etcd/clientv3#example-KV--Put
 
-type KeyInfo struct {
-	Key   string `json:"key" form:"key"`
-	Value string `json:"value" form:"value"`
-}
-
+// SetKey 设置key
+// key key名称
+// value key值
 func SetKey(key string, value string) error {
 
 	etcdv3.InitGlobalConfig()
@@ -23,13 +22,17 @@ func SetKey(key string, value string) error {
 		fmt.Printf("%s =>%s set success", key, val)
 		fmt.Println()
 	} else {
-		fmt.Errorf("get %s found error:%s", key, err.Error())
+		fmt.Printf("get %s found error:%s", key, err.Error())
 		fmt.Println()
 	}
 	return err
 
 }
 
+// SetKeyWithLease 设置key（带有lease）
+// key key名称
+// value key值
+// ttl 租约期
 func SetKeyWithLease(key, value string, ttl int64) (*clientv3.LeaseGrantResponse, error) {
 	etcdv3.InitGlobalConfig()
 	lresp, _, err := etcdv3.PutKeyWithLease(key, value, ttl)
@@ -37,63 +40,70 @@ func SetKeyWithLease(key, value string, ttl int64) (*clientv3.LeaseGrantResponse
 		fmt.Printf("%s =>%s set success", key, value)
 		fmt.Println()
 	} else {
-		fmt.Errorf("get %s found error:%s", key, err.Error())
+		fmt.Printf("get %s found error:%s", key, err.Error())
 		fmt.Println()
 	}
-	fmt.Printf("lrsp.ID:%s \r\n", lresp.ID)
+	fmt.Printf("lrsp.ID:%d \r\n", lresp.ID)
 	fmt.Printf("lrsp:%+v", lresp)
 	fmt.Println()
 	return lresp, err
 }
 
-func LeaseRevoke(respID etcdv3.RespID) error {
-	return etcdv3.LeaseRevoke(respID)
+// LeaseRevoke 删除租约
+func LeaseRevoke(leaseID etcdv3.LeaseID) error {
+	return etcdv3.LeaseRevoke(leaseID)
 }
 
-func LeaseKeepAlive(respID etcdv3.RespID) error {
-	return etcdv3.LeaseKeepAlive(respID)
+// LeaseKeepAlive 取消租约为永久
+func LeaseKeepAlive(leaseID etcdv3.LeaseID) error {
+	return etcdv3.LeaseKeepAlive(leaseID)
 }
 
-func LeaseKeepAliveOnce(respID etcdv3.RespID) error {
-	return etcdv3.LeaseKeepAliveOnce(respID)
+// LeaseKeepAliveOnce 续约
+func LeaseKeepAliveOnce(leaseID etcdv3.LeaseID) error {
+	return etcdv3.LeaseKeepAliveOnce(leaseID)
 }
 
-func TimetoLive(respID etcdv3.RespID) (*clientv3.LeaseTimeToLiveResponse, error) {
-	return etcdv3.TimeToLive(respID)
+// TimetoLive 获得租约信息
+func TimetoLive(leaseID etcdv3.LeaseID) (*clientv3.LeaseTimeToLiveResponse, error) {
+	return etcdv3.TimeToLive(leaseID)
 }
 
-func GetKey(key string) KeyInfo {
+// GetKey 获取key的相关信息
+func GetKey(key string) common.KeyInfo {
 	etcdv3.InitGlobalConfig()
 	val, err := etcdv3.GetKey(key)
 	if err == nil {
 		fmt.Printf("%s =>%s", key, val)
 		fmt.Println()
 	} else {
-		fmt.Errorf("get %s found error:%s", key, err.Error())
+		fmt.Printf("get %s found error:%s", key, err.Error())
 		fmt.Println()
 	}
-	return KeyInfo{key, val}
+	return common.KeyInfo{Key: key, Value: val}
 }
 
-func GetKeyList(key string) []KeyInfo {
+// GetKeyList 获取key的列表信息
+func GetKeyList(key string) []common.KeyInfo {
 	etcdv3.InitGlobalConfig()
 	//keys, err := etcdv3.GetKeyList(key, clientv3.WithPrefix())
 	keys, err := etcdv3.GetKeyList(key)
 	if err != nil {
-		fmt.Errorf("getKeyList error:%s", err.Error())
+		fmt.Printf("getKeyList error:%s", err.Error())
 	}
-	keyInfos := make([]KeyInfo, 0)
+	keyInfos := make([]common.KeyInfo, 0)
 	for _, kv := range keys.Kvs {
 		fmt.Printf("%s => %s", kv.Key, kv.Value)
 		fmt.Println()
-		keyInfo := KeyInfo{Key: util.ToString(kv.Key), Value: util.ToString(kv.Value)}
+		keyInfo := common.KeyInfo{Key: util.ToString(kv.Key), Value: util.ToString(kv.Value)}
 		keyInfos = append(keyInfos, keyInfo)
 	}
 
 	return keyInfos
 }
 
-func GetKeyList2(key string) []KeyInfo {
+// GetKeyList2 获取key的列表信息
+func GetKeyList2(key string) []common.KeyInfo {
 	etcdv3.InitGlobalConfig()
 	fmt.Println("GetKeyListWithPrefix")
 	keys, err := etcdv3.GetKeyListWithPrefix(key)
@@ -101,11 +111,11 @@ func GetKeyList2(key string) []KeyInfo {
 		fmt.Printf("etcdv3.GetKeyListWithPrefix found error, key:%s, error:%s", key, err.Error())
 		fmt.Println()
 	}
-	keyInfos := make([]KeyInfo, 0)
+	keyInfos := make([]common.KeyInfo, 0)
 	for k, v := range keys {
 		fmt.Printf("%s => %s", k, v)
 		fmt.Println()
-		keyInfos = append(keyInfos, KeyInfo{k, v})
+		keyInfos = append(keyInfos, common.KeyInfo{Key: k, Value: v})
 	}
 
 	return keyInfos

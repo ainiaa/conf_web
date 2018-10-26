@@ -18,8 +18,10 @@ var globalKVC clientv3.KV
 var globalCli *clientv3.Client
 var initedConfig = false
 
-type RespID = clientv3.LeaseID
+//LeaseID LeaseID
+type LeaseID = clientv3.LeaseID
 
+// InitGlobalConfig 初始化公共配置项
 func InitGlobalConfig() {
 	if initedConfig == false {
 		c := config.GetEtcdConfig()
@@ -30,6 +32,7 @@ func InitGlobalConfig() {
 	}
 }
 
+// InitConfig 初始化配置项
 func InitConfig(endpoints []string, timeout string) {
 	globalEndpoints = endpoints
 	globalTimeout = timeout
@@ -82,6 +85,7 @@ func getCtx(duration string) (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
+// GetKey 获取key的相关信息
 func GetKey(key string) (string, error) {
 	gresp, err := GetKeyList(key)
 	if err != nil {
@@ -94,6 +98,7 @@ func GetKey(key string) (string, error) {
 	return "", err
 }
 
+// GetKeyRev 获取key的相关信息（包含版本信息）
 func GetKeyRev(key string, rev int64) (string, error) {
 	gresp, err := GetKeyList(key, clientv3.WithRev(rev))
 	if err != nil {
@@ -106,6 +111,7 @@ func GetKeyRev(key string, rev int64) (string, error) {
 	return "", err
 }
 
+// GetKeyList 获取key列表
 func GetKeyList(key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
 	kvc, err := getKVC()
 	if err != nil {
@@ -121,6 +127,7 @@ func GetKeyList(key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, e
 	return kvc.Get(ctx, key)
 }
 
+// GetKeyListWithPrefix 根据前缀获取key列表
 func GetKeyListWithPrefix(key string) (map[string]string, error) {
 	gresp, err := GetKeyList(key, clientv3.WithPrefix())
 	m := make(map[string]string)
@@ -133,6 +140,7 @@ func GetKeyListWithPrefix(key string) (map[string]string, error) {
 	return m, nil
 }
 
+// PutKeyWithLease 新增key （带lease）
 func PutKeyWithLease(key, val string, ttl int64) (*clientv3.LeaseGrantResponse, *clientv3.PutResponse, error) {
 	cli, err := getCli()
 	if err != nil {
@@ -153,7 +161,8 @@ func PutKeyWithLease(key, val string, ttl int64) (*clientv3.LeaseGrantResponse, 
 	return resp, r, err
 }
 
-func LeaseRevoke(respID RespID) error {
+// LeaseRevoke 删除租约
+func LeaseRevoke(respID LeaseID) error {
 	cli, err := getCli()
 	if err != nil {
 		log.Fatal(err)
@@ -171,7 +180,8 @@ func LeaseRevoke(respID RespID) error {
 	return err
 }
 
-func LeaseKeepAlive(respID RespID) error {
+// LeaseKeepAlive  取消租约
+func LeaseKeepAlive(respID LeaseID) error {
 	cli, err := getCli()
 	if err != nil {
 		log.Fatal(err)
@@ -188,7 +198,8 @@ func LeaseKeepAlive(respID RespID) error {
 	return err
 }
 
-func LeaseKeepAliveOnce(respID RespID) error {
+// LeaseKeepAliveOnce 续约
+func LeaseKeepAliveOnce(respID LeaseID) error {
 	cli, err := getCli()
 	if err != nil {
 		log.Fatal(err)
@@ -205,7 +216,8 @@ func LeaseKeepAliveOnce(respID RespID) error {
 	return err
 }
 
-func TimeToLive(respID RespID) (*clientv3.LeaseTimeToLiveResponse, error) {
+// TimeToLive 获得TTL相关信息
+func TimeToLive(respID LeaseID) (*clientv3.LeaseTimeToLiveResponse, error) {
 	cli, err := getCli()
 	if err != nil {
 		log.Fatal(err)
@@ -222,6 +234,7 @@ func TimeToLive(respID RespID) (*clientv3.LeaseTimeToLiveResponse, error) {
 	return lresp, err
 }
 
+// PutKey 新增key
 func PutKey(key, value string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
 	kvc, err := getKVC()
 	if err != nil {
@@ -236,6 +249,7 @@ func PutKey(key, value string, opts ...clientv3.OpOption) (*clientv3.PutResponse
 	return kvc.Put(ctx, key, value)
 }
 
+// DeleteKey 删除key
 func DeleteKey(key string, opts ...clientv3.OpOption) (*clientv3.DeleteResponse, error) {
 	kvc, err := getKVC()
 	if err != nil {
