@@ -3,6 +3,7 @@ package manage
 import (
 	"fmt"
 
+	"github.com/coreos/etcd/clientv3"
 	"maicai.ddxq.com/etcdv3"
 	"maicai.ddxq.com/util"
 )
@@ -31,7 +32,7 @@ func SetKey(key string, value string) error {
 
 func SetKeyWithLease(key, value string, ttl int64) (*clientv3.LeaseGrantResponse, error) {
 	etcdv3.InitGlobalConfig()
-	lresp, presp, err := etcdv3.PutKeyWithLease(key, value, ttl)
+	lresp, _, err := etcdv3.PutKeyWithLease(key, value, ttl)
 	if err == nil {
 		fmt.Printf("%s =>%s set success", key, value)
 		fmt.Println()
@@ -39,6 +40,9 @@ func SetKeyWithLease(key, value string, ttl int64) (*clientv3.LeaseGrantResponse
 		fmt.Errorf("get %s found error:%s", key, err.Error())
 		fmt.Println()
 	}
+	fmt.Printf("lrsp.ID:%s \r\n", lresp.ID)
+	fmt.Printf("lrsp:%+v", lresp)
+	fmt.Println()
 	return lresp, err
 }
 
@@ -52,6 +56,10 @@ func LeaseKeepAlive(respID etcdv3.RespID) error {
 
 func LeaseKeepAliveOnce(respID etcdv3.RespID) error {
 	return etcdv3.LeaseKeepAliveOnce(respID)
+}
+
+func TimetoLive(respID etcdv3.RespID) (*clientv3.LeaseTimeToLiveResponse, error) {
+	return etcdv3.TimeToLive(respID)
 }
 
 func GetKey(key string) KeyInfo {

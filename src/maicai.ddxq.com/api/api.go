@@ -75,6 +75,7 @@ func setupRouter() *gin.Engine {
 	router.GET("/leaseRevoke", leaseRevokeHandler)
 	router.GET("/leaseKeepAlive", leaseKeepAliveHandler)
 	router.GET("/leaseKeepAliveOnce", leaseKeepAliveOnceHandler)
+	router.GET("/timetoLive", timetoLiveHandler)
 
 	router.GET("/index", indexHandler)
 	router.POST("/getMenu", getMenuHandler)
@@ -204,6 +205,31 @@ func leaseKeepAliveOnceHandler(c *gin.Context) {
 	}
 }
 
+func timetoLiveHandler(c *gin.Context) {
+	fmt.Printf("globalResp.ID:%d", globalResp.ID)
+	fmt.Printf("globalResp:%+v", globalResp)
+
+	fmt.Println()
+	if globalResp != nil {
+		lresp, err := cm.TimetoLive(globalResp.ID)
+		fmt.Printf("lresp:%+v", lresp)
+		if err == nil {
+			c.JSON(http.StatusOK, gin.H{
+				"message": fmt.Sprintf("lresp TTL:%d  GrantedTTL:%d \r\n", lresp.TTL, lresp.GrantedTTL),
+			})
+		} else {
+
+			c.JSON(http.StatusOK, gin.H{
+				"message": fmt.Errorf("LeaseKeepAliveOnce operate failure, error:%s", err.Error()),
+			})
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "nothing to be operated",
+		})
+	}
+}
+
 var globalResp *clientv3.LeaseGrantResponse
 
 func setKeyWithTtlHandler(c *gin.Context) {
@@ -214,8 +240,10 @@ func setKeyWithTtlHandler(c *gin.Context) {
 	if err != nil {
 		ttl = 5
 	}
-	var resp *clientv3.LeaseGrantResponse
 	globalResp, err = cm.SetKeyWithLease(key, value, ttl)
+	fmt.Printf("globalResp.ID %s \r\n", globalResp.ID)
+	fmt.Printf("globalResp %+v \r\n", globalResp)
+	fmt.Println()
 	if err == nil {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "set success",

@@ -1,6 +1,7 @@
 package etcdv3
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -17,7 +18,7 @@ var globalKVC clientv3.KV
 var globalCli *clientv3.Client
 var initedConfig = false
 
-type RespID clientv3.LeaseID
+type RespID = clientv3.LeaseID
 
 func InitGlobalConfig() {
 	if initedConfig == false {
@@ -138,7 +139,7 @@ func PutKeyWithLease(key, val string, ttl int64) (*clientv3.LeaseGrantResponse, 
 		log.Fatal(err)
 		return nil, nil, err
 	}
-	defer cli.Close()
+	//defer cli.Close()
 	ctx, cancel := getCtx(globalTimeout)
 	defer cancel()
 	resp, err := cli.Grant(ctx, ttl)
@@ -146,19 +147,22 @@ func PutKeyWithLease(key, val string, ttl int64) (*clientv3.LeaseGrantResponse, 
 		log.Fatal(err)
 		return nil, nil, err
 	}
+	fmt.Printf("resp.ID:%d ", resp.ID)
+	fmt.Println()
 	r, err := cli.Put(ctx, key, val, clientv3.WithLease(resp.ID))
 	return resp, r, err
 }
 
-func LeaseRevoke(respID clientv3.LeaseID) error {
+func LeaseRevoke(respID RespID) error {
 	cli, err := getCli()
 	if err != nil {
 		log.Fatal(err)
 		return err
 	}
-	defer cli.Close()
+	//defer cli.Close()
 	ctx, cancel := getCtx(globalTimeout)
 	defer cancel()
+
 	_, err = cli.Revoke(ctx, respID)
 	if err != nil {
 		log.Fatal(err)
@@ -167,13 +171,13 @@ func LeaseRevoke(respID clientv3.LeaseID) error {
 	return err
 }
 
-func LeaseKeepAlive(respID clientv3.LeaseID) error {
+func LeaseKeepAlive(respID RespID) error {
 	cli, err := getCli()
 	if err != nil {
 		log.Fatal(err)
 		return err
 	}
-	defer cli.Close()
+	//defer cli.Close()
 	ctx, cancel := getCtx(globalTimeout)
 	defer cancel()
 	_, err = cli.KeepAlive(ctx, respID)
@@ -184,13 +188,13 @@ func LeaseKeepAlive(respID clientv3.LeaseID) error {
 	return err
 }
 
-func LeaseKeepAliveOnce(respID clientv3.LeaseID) error {
+func LeaseKeepAliveOnce(respID RespID) error {
 	cli, err := getCli()
 	if err != nil {
 		log.Fatal(err)
 		return err
 	}
-	defer cli.Close()
+	//defer cli.Close()
 	ctx, cancel := getCtx(globalTimeout)
 	defer cancel()
 	_, err = cli.KeepAliveOnce(ctx, respID)
@@ -199,6 +203,23 @@ func LeaseKeepAliveOnce(respID clientv3.LeaseID) error {
 		return err
 	}
 	return err
+}
+
+func TimeToLive(respID RespID) (*clientv3.LeaseTimeToLiveResponse, error) {
+	cli, err := getCli()
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	//defer cli.Close()
+	ctx, cancel := getCtx(globalTimeout)
+	defer cancel()
+	lresp, err := cli.TimeToLive(ctx, respID)
+	if err != nil {
+		log.Fatal(err)
+		return lresp, err
+	}
+	return lresp, err
 }
 
 func PutKey(key, value string, opts ...clientv3.OpOption) (*clientv3.PutResponse, error) {
